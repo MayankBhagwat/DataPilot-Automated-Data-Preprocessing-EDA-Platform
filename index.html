@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataPilot | Automated Data Processing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .feature-card { transition: 0.2s ease; cursor: pointer; border: 2px solid transparent; }
+        .feature-card:hover { transform: translateY(-5px); border-color: #2563eb; background-color: #f0f7ff; }
+        .hidden { display: none !important; }
+        .card-animate { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <nav class="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg text-white flex items-center justify-center font-bold text-lg">Data</div>
+            <span class="text-xl font-bold text-gray-900 tracking-tight">DataPilot</span>
+        </div>
+        <div class="text-xs font-medium text-slate-400 bg-slate-100 px-3 py-1 rounded-full">v1.0 Professional</div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto p-6 md:p-12 w-full">
+        <div id="mainCard" class="bg-white rounded-3xl p-10 md:p-14 card-shadow text-center">
+            <span class="inline-block px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-6">
+                Automated Data Cleaning & EDA
+            </span>
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6">
+                Clean and Analyze Your Dataset Automatically
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-12">
+                Upload CSV or Excel datasets to perform automated cleaning, exploratory analysis, and feature preprocessing in seconds.
+            </p>
+
+            <div id="uploadZone" class="border-2 border-dashed border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center hover:bg-slate-50 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-14 h-14 text-blue-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-800">Upload Dataset</h3>
+                <p class="text-gray-500 mt-2">Select CSV or Excel file to begin</p>
+                
+                <input type="file" id="fileInput" class="hidden" accept=".csv,.xlsx,.xls">
+                <div class="mt-8 flex gap-4">
+                    <label for="fileInput" class="bg-gray-100 text-gray-700 px-8 py-3 rounded-xl font-medium cursor-pointer hover:bg-gray-200">📁 Browse Files</label>
+                    <button onclick="processDataset()" id="btnText" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 active:scale-95 transition">Start Analysis</button>
+                </div>
+                <p id="fileNameDisplay" class="mt-4 text-sm text-blue-600 font-medium"></p>
+                <div id="targetControl" class="hidden mt-6 w-full max-w-sm text-left">
+                    <label for="targetColumn" class="block text-sm font-bold text-gray-700 mb-2">Target column</label>
+                    <select id="targetColumn" class="w-full border border-gray-300 bg-white px-4 py-3 rounded-lg text-gray-800">
+                        <option value="">Auto-detect target</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-2">The target is preserved and never scaled or one-hot encoded.</p>
+                </div>
+            </div>
+
+            <div id="dashboard" class="hidden mt-12 text-left card-animate">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Dataset Overview</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                        <p class="text-sm text-gray-500 font-bold uppercase tracking-wider">Rows</p>
+                        <h3 id="rows" class="text-4xl font-black text-gray-900 mt-1">0</h3>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                        <p class="text-sm text-gray-500 font-bold uppercase tracking-wider">Columns</p>
+                        <h3 id="cols" class="text-4xl font-black text-gray-900 mt-1">0</h3>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-center">
+                        <p class="text-sm text-gray-500 font-bold uppercase tracking-wider">Issues Found</p>
+                        <h3 id="missing" class="text-4xl font-black text-gray-900 mt-1">0</h3>
+                    </div>
+                </div>
+                <div class="mt-8">
+                    <h4 class="font-bold text-gray-700 mb-3">Columns Found:</h4>
+                    <div id="colBadges" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="featureGrid" class="grid md:grid-cols-4 gap-6 mt-10">
+            <div onclick="toggleReport('eda')" class="bg-white rounded-2xl p-6 feature-card card-shadow">
+                <div class="text-3xl mb-4">📊</div>
+                <h3 class="text-lg font-bold text-gray-800">EDA Analysis</h3>
+                <p class="text-gray-500 mt-2 text-sm">Visual reports, outliers, and distributions.</p>
+            </div>
+            <div onclick="toggleReport('cleaning')" class="bg-white rounded-2xl p-6 feature-card card-shadow">
+                <div class="text-3xl mb-4">🧹</div>
+                <h3 class="text-lg font-bold text-gray-800">Data Cleaning</h3>
+                <p id="cleaningSummary" class="text-gray-500 mt-2 text-sm">Waiting for upload...</p>
+            </div>
+            <div onclick="toggleReport('prep')" class="bg-white rounded-2xl p-6 feature-card card-shadow">
+                <div class="text-3xl mb-4">⚙️</div>
+                <h3 class="text-lg font-bold text-gray-800">Preprocessing</h3>
+                <p id="prepSummary" class="text-gray-500 mt-2 text-sm">Wait for upload...</p>
+            </div>
+            <a id="dlLink" href="#" class="bg-white rounded-2xl p-6 feature-card card-shadow flex flex-col items-start">
+                <div class="text-3xl mb-4">⬇️</div>
+                <h3 class="text-lg font-bold text-gray-800">Download</h3>
+                <p class="text-blue-600 mt-2 text-sm font-bold">Cleaned CSV</p>
+            </a>
+        </div>
+
+        <div id="reportContainer" class="mt-12 hidden card-animate"></div>
+    </main>
+
+    <script>
+        let globalData = null;
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[char]);
+        }
+
+        async function loadColumns(file) {
+            const control = document.getElementById('targetControl');
+            const select = document.getElementById('targetColumn');
+            control.classList.add('hidden');
+            select.innerHTML = '<option value="">Auto-detect target</option>';
+
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await fetch('/columns/', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.status !== 'success') return;
+
+            result.columns.forEach(column => {
+                const option = document.createElement('option');
+                option.value = column;
+                option.textContent = column;
+                option.selected = column === result.suggested_target;
+                select.appendChild(option);
+            });
+            control.classList.remove('hidden');
+        }
+
+        document.getElementById('fileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            document.getElementById('fileNameDisplay').innerText = file ? `Selected: ${file.name}` : "";
+            try {
+                await loadColumns(file);
+            } catch (error) {
+                console.error(error);
+            }
+        });
+
+        // Function to call FastAPI backend
+        async function processDataset() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const btn = document.getElementById('btnText');
+
+            if(!file) return alert("Please select a file first!");
+
+            btn.innerText = "⏳ Processing...";
+            btn.disabled = true;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('target_column', document.getElementById('targetColumn').value);
+
+            try {
+                const res = await fetch('/upload/', { method: 'POST', body: formData });
+                const result = await res.json();
+
+                if(result.status === 'success') {
+                    globalData = result;
+                    populateUI(); // Basic stats update
+                    document.getElementById('uploadZone').classList.add('hidden');
+                    document.getElementById('dashboard').classList.remove('hidden');
+                    alert("Analysis Complete! Click cards below to see reports.");
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (err) {
+                alert("Server connection failed!");
+                console.error(err);
+            } finally {
+                btn.innerText = "Start Analysis";
+                btn.disabled = false;
+            }
+        }
+
+        // Basic UI population (Top Cards)
+        function populateUI() {
+            const res = globalData.results;
+            document.getElementById('rows').innerText = res.eda.rows;
+            document.getElementById('cols').innerText = res.eda.columns;
+            document.getElementById('missing').innerText = res.cleaning.null_before;
+
+            document.getElementById('colBadges').innerHTML = res.eda.column_names.map(c => 
+                `<span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-100">${escapeHtml(c)}</span>`
+            ).join('');
+
+            const fixedNulls = res.cleaning.null_before - res.cleaning.null_after;
+            document.getElementById('cleaningSummary').innerText = `Fixed ${fixedNulls} missing values, removed ${res.cleaning.duplicates_found} duplicates`;
+            const targetText = res.preprocessing.target_column ? `Target: ${res.preprocessing.target_column}` : 'No target selected';
+            document.getElementById('prepSummary').innerText = `${targetText}. ${res.preprocessing.encoded_columns.length} encoded, ${res.preprocessing.scaled_columns.length} scaled`;
+            document.getElementById('dlLink').href = `/download/${globalData.cleaned_filename}`;
+        }
+
+        // Detailed Report Toggle (Triggered by Card Clicks)
+        function toggleReport(type) {
+            if (!globalData) return alert("Pehle file upload karke 'Start Analysis' karein!");
+            
+            const container = document.getElementById('reportContainer');
+            const res = globalData.results;
+            container.classList.remove('hidden');
+            
+            let html = "";
+
+            // index.html mein toggleReport -> eda section mein add karein:
+// index.html -> toggleReport -> eda section
+if (type === 'eda') {
+    html = `
+        <div class="space-y-10 card-animate">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                    <h4 class="font-bold text-slate-800 mb-4">📊 Outlier Analysis</h4>
+                    <img src="data:image/png;base64,${res.eda.visuals.boxplot}" class="w-full rounded-xl">
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                    <h4 class="font-bold text-slate-800 mb-4">📈 ${res.eda.target_col || 'Target'} Distribution</h4>
+                    <img src="data:image/png;base64,${res.eda.visuals.countplot}" class="w-full rounded-xl">
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+                <h4 class="font-bold text-slate-800 mb-4">🔗 Feature Relationships (Trend Analysis)</h4>
+                <img src="data:image/png;base64,${res.eda.visuals.relationship}" class="w-full rounded-2xl border border-slate-50">
+                <p class="text-sm text-slate-500 mt-4 italic text-center text-center">Regression line showing the trend between your top two numeric features.</p>
+            </div>
+
+            <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+                <h4 class="font-bold text-slate-800 mb-4">🧬 Correlation Matrix</h4>
+                <img src="data:image/png;base64,${res.eda.visuals.heatmap}" class="w-full rounded-2xl">
+            </div>
+        </div>`;
+}
+    
+
+            else if (type === 'cleaning') {
+                html = `
+                    <div class="bg-emerald-50 p-8 rounded-3xl border border-emerald-200 card-animate">
+                        <h4 class="font-bold text-emerald-800 mb-6 text-xl flex items-center gap-2">🧹 Data Cleaning Report</h4>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
+                                <p class="text-emerald-600 text-xs font-bold uppercase tracking-wider">Duplicates Removed</p>
+                                <h3 class="text-3xl font-black text-emerald-900 mt-2">${res.cleaning.duplicates_found}</h3>
+                                <p class="text-xs text-emerald-400 mt-2 italic">Redundant rows deleted for data integrity.</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
+                                <p class="text-emerald-600 text-xs font-bold uppercase tracking-wider">Null Values Fixed</p>
+                                <h3 class="text-3xl font-black text-emerald-900 mt-2">${res.cleaning.null_before}</h3>
+                                <p class="text-xs text-emerald-400 mt-2 italic">Missing entries filled using automated logic.</p>
+                            </div>
+                        </div>
+                    </div>`;
+            } 
+            else if (type === 'prep') {
+                html = `
+                    <div class="grid md:grid-cols-2 gap-6 card-animate">
+                        <div class="md:col-span-2 bg-emerald-50 p-6 rounded-3xl border border-emerald-200 flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-emerald-800">Target preserved: ${escapeHtml(res.preprocessing.target_column || 'None selected')}</h4>
+                                <p class="text-sm text-emerald-600 mt-1">The cleaned download stays readable. Encoding and scaling are only in the model-ready file.</p>
+                            </div>
+                            <a href="/download/${encodeURIComponent(globalData.model_filename)}" class="bg-emerald-700 text-white px-5 py-3 rounded-lg text-sm font-bold hover:bg-emerald-800">Download Model-ready CSV</a>
+                        </div>
+                        <div class="bg-blue-50 p-6 rounded-3xl border border-blue-200">
+                            <h4 class="font-bold text-blue-800 mb-3">🔢 One-Hot Encoding Report</h4>
+                            <p class="text-xs text-blue-500 mb-4 italic">Categorical columns converted to one-hot features:</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${res.preprocessing.encoded_columns.length > 0 
+                                    ? res.preprocessing.encoded_columns.map(c => `<span class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm">${escapeHtml(c)}</span>`).join('') 
+                                    : 'None'}
+                            </div>
+                        </div>
+                        <div class="bg-violet-50 p-6 rounded-3xl border border-violet-200">
+                            <h4 class="font-bold text-violet-800 mb-3">⚖️ Feature Scaling Report</h4>
+                            <p class="text-xs text-violet-500 mb-4 italic">Numeric features standardized to zero mean and unit variance:</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${res.preprocessing.scaled_columns.length > 0 
+                                    ? res.preprocessing.scaled_columns.map(c => `<span class="bg-violet-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm">${escapeHtml(c)}</span>`).join('') 
+                                    : 'None'}
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            container.innerHTML = html;
+            container.querySelectorAll('img').forEach(img => {
+                if (img.getAttribute('src').endsWith('undefined')) {
+                    img.closest('.bg-white')?.remove();
+                }
+            });
+            // Scroll to report for better experience
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
