@@ -1,0 +1,2 @@
+# DataPilot-Automated-Data-Preprocessing-EDA-Platform
+Developed a web-based platform using FastAPI, Pandas, NumPy, and Matplotlib to automate data cleaning, preprocessing, and exploratory data analysis (EDA). Implemented features for handling missing values, duplicate records, outlier detection, data transformation, correlation analysis, and visualization generation. Enabled users to upload datasets
